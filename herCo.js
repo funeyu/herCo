@@ -32,6 +32,25 @@ function walk(gen, resolve, reject) {
         gen.throw(error)
       })
     }
+
+    if (isThunkFunction(result.value)) {
+      result.value.call(null, function(err, data) {
+        if (err) {
+          try {
+            resolve(gen.throw(err).value)
+          } catch (error) {
+            reject(error)
+          }
+          // 只要出错就将整个yield结束，不在next()
+          return
+        }
+
+        result = gen.next(data)
+        next()
+      })
+    }
+
+
   }
 
 }
@@ -40,44 +59,18 @@ function isPromise(obj) {
   return obj instanceof Promise || typeof obj.then === 'function'
 }
 
-// function is
+/*
+  thunkFunction: 例如
+  const thunk = function(fileName, codeType) {
+    return function(callback){}
+  }
+*/
+function isThunkFunction(obj) {
+  return typeof obj === 'function'
+}
+
 function isGenerator(gen){
   return typeof gen.next === 'function' && typeof gen.throw === 'function'
 }
+
 module.exports = herCo
-
-
-
-// herCo(function* () {
-//   try {
-//     var result = yield Promise.reject("true");
-//     var result2 = yield new Promise(function(resolve, reject) {
-//       setTimeout(function(){
-//         resolve('finished here')
-//       }, 1000)
-//     })
-//     return result2;
-//   } catch(error) {
-//     return 'success'
-//   }
-//
-// }).then(function (value) {
-//   console.log(value);
-// }, function (err) {
-//   console.error('warning:' + err);
-// });
-
-herCo(function* () {
-    var result = yield Promise.reject("true");
-    var result2 = yield new Promise(function(resolve, reject) {
-      setTimeout(function(){
-        resolve('finished here')
-      }, 1000)
-    })
-    return result2;
-
-}).then(function (value) {
-  console.log(value);
-}, function (err) {
-  console.error('warning:' + err);
-});
