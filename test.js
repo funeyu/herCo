@@ -10,7 +10,7 @@ herCo(function*(){
 
 function readFile( path ){
     return function(callback){
-       fs.readFile( path , callback);
+       fs.readFile( path , 'utf-8', callback);
     }
 }
 
