@@ -17,7 +17,6 @@ function walk(gen, resolve, reject) {
 
   function next() {
     if (result.done) return resolve(result.value)
-
     if (isPromise(result.value)) {
       result.value.then(function(data) {
         result = gen.next(data)
@@ -33,7 +32,7 @@ function walk(gen, resolve, reject) {
       })
     }
 
-    if (isThunkFunction(result.value)) {
+    else if (isThunkFunction(result.value)) {
       result.value.call(null, function(err, data) {
         if (err) {
           try {
@@ -50,6 +49,20 @@ function walk(gen, resolve, reject) {
       })
     }
 
+    else if (isPromiseArray(result.value)) {
+      Promise.all(result.value).then(function(data) {
+        result = gen.next(data)
+
+        next()
+      }).catch(function(error) {
+        try {
+          resolve(gen.throw(error).value)
+        } catch (err){
+          reject(err)
+        }
+        gen.throw(error)
+      })
+    }
 
   }
 
@@ -69,6 +82,11 @@ function isThunkFunction(obj) {
   return typeof obj === 'function'
 }
 
+function isPromiseArray(promises) {
+  return !promises.find(function(p) {
+    return !isPromise(p)
+  })
+}
 function isGenerator(gen){
   return typeof gen.next === 'function' && typeof gen.throw === 'function'
 }
