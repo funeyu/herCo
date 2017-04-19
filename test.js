@@ -63,3 +63,16 @@ herCo(function* () {
 }, function (err) {
   console.error('warning:' + err);
 });
+
+// yield generator的使用=============================================================
+function* innerGen() {
+  var result = yield Promise.resolve('innerGen')
+  console.log('innerGen ends here')
+  return result
+}
+herCo(function* () {
+  var result = yield Promise.resolve('outerGen')
+  console.log('outerGen:' + result)
+  var innerResult = yield *innerGen()
+  console.log('from innerGen result:'+ innerResult)
+})
